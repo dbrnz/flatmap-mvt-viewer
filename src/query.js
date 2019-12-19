@@ -41,7 +41,7 @@ export class QueryInterface
         this._parser = new N3.Parser();
         this.loadStore_().then(() => {
             this._engine = newEngine();
-            // We only now are ready to start accepting queries...
+            // Only now are we ready to start accepting queries...
             this._messagePasser = new MessagePasser('query-interface', json => {});
         }, err => console.log(err));
     }

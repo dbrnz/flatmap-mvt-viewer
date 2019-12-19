@@ -30,7 +30,6 @@ import {MessagePasser} from './messages.js';
 
 //==============================================================================
 
-
 class LayerControl
 {
     constructor(flatmap)

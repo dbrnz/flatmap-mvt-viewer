@@ -11,5 +11,13 @@ Welcome to Flatmap Viewer's documentation!
    :caption: Contents:
 
    UserInterface
-   Implementation
+   STYLE
+   API
+   KB_QUERY
 
+..  Overview
+
+..  Messages
+
+..  MapMaking
+    * How to automate? (source --> AWS server)

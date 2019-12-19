@@ -45,12 +45,17 @@ import * as utils from './utils.js';
 
 class FlatMap
 {
+   /**
+    * Maps are not created directly but instead are created and loaded by
+    * :meth:`MapManager.LoadMap`.
+    */
     constructor(container, mapDescription, resolve)
     {
         this._id = mapDescription.id;
         this._source = mapDescription.source;
+        this._created = mapDescription.created;
         this._describes = mapDescription.describes;
-        this._mapNumber = mapDescription.serialNumber;
+        this._mapNumber = mapDescription.number;
         this._resolve = resolve;
 
         this._idToAnnotation = new Map();
@@ -83,29 +88,46 @@ class FlatMap
             }
         }
 
+        // Save the map description as our options
+
         this._options = mapDescription.options;
 
-        this._map = new mapboxgl.Map({
+        // Set options for the Mapbox map
+
+        const mapboxOptions = {
             style: mapDescription.style,
             container: container,
             attributionControl: false
-        });
+        };
+
+        if ('debug' in mapDescription.options) {
+            mapboxOptions.hash = true;
+        }
+        if ('max-zoom' in mapDescription.options) {
+            mapboxOptions.maxZoom = mapDescription.options['max-zoom'];
+        }
+        if ('min-zoom' in mapDescription.options) {
+            mapboxOptions.minZoom = mapDescription.options['min-zoom'];
+        }
+        if ('zoom' in mapDescription.options) {
+            mapboxOptions.zoom = mapDescription.options['zoom'];
+        }
+
+        // Create the map
+
+        this._map = new mapboxgl.Map(mapboxOptions);
+
+        // Don't wrap around at +/-180 degrees
 
         this._map.setRenderWorldCopies(false);
 
-        if ('min-zoom' in mapDescription.options) {
-            this._map.setMinZoom(mapDescription.options['min-zoom']);
-        }
-        if ('max-zoom' in mapDescription.options) {
-            this._map.setMaxZoom(mapDescription.options['max-zoom']);
-        }
-        if ('zoom' in mapDescription.options) {
-            this._map.setZoom(mapDescription.options['zoom']);
-        }
+        // Do we want a fullscreen control?
 
         if (mapDescription.options.fullscreenControl === true) {
-            this._map.addControl(new mapboxgl.FullscreenControl());
+            this._map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
         }
+
+        // Add navigation controls and disable rotation
 
         this._map.addControl(new mapboxgl.NavigationControl({showCompass: false}), 'bottom-right');
         this._map.dragRotate.disable();
@@ -146,22 +168,48 @@ class FlatMap
         return url;
     }
 
+    /**
+     * The taxon identifier of the species described by the map.
+     *
+     * @type string
+     */
+    get describes()
+    //=============
+    {
+        return this._describes;
+    }
+
+    /**
+     * The map's creation time.
+     *
+     * @type string
+     */
+    get created()
+    //===========
+    {
+        return this._created;
+    }
+
+    /**
+     * The map's id as specified at generation time.
+     *
+     * @type string
+     */
     get id()
     //======
     {
         return this._id;
     }
 
+    /**
+     * A unique identifier for the map within the viewer.
+     *
+     * @type string
+     */
     get uniqueId()
     //============
     {
         return `${this._id}-${this._mapNumber}`;
-    }
-
-    get describes()
-    //=============
-    {
-        return this._describes;
     }
 
     get activeLayerNames()
@@ -373,8 +421,14 @@ class FlatMap
 
 //==============================================================================
 
+/**
+ * A manager for FlatMaps.
+ * @example
+ * const mapManager = new MapManger();
+ */
 export class MapManager
 {
+    /* Create a MapManager */
     constructor()
     {
         this._maps = null;
@@ -387,7 +441,9 @@ export class MapManager
         let latestMap = null;
         let lastCreatedTime = '';
         for (const map of this._maps) {
-            if (mapDescribes == map.describes || mapDescribes === map.source) {
+            if (mapDescribes === map.describes
+             || mapDescribes === map.id
+             || mapDescribes === map.source) {
                 if ('created' in map) {
                     if (lastCreatedTime < map.created) {
                         lastCreatedTime = map.created;
@@ -442,6 +498,37 @@ export class MapManager
         });
     }
 
+   /**
+    * Load and display a FlatMap.
+    *
+    * @arg identifier {string|Object} A string or object identifying the map to load. If a string its
+    *                                 value can be either the map's ``id``, assigned at generation time,
+    *                                 or a taxon identifier of the species that the map represents. The
+    *                                 latest version of a map is loaded unless it has been identified
+    *                                 by ``source`` (see below).
+    * @arg identifier.describes {string} The taxon identifier of the map. This is specified as metadata
+    *                                    in the map's source file.)
+    * @arg identifier.source {string} The URL of the source file from which the map has
+    *                                 been generated. If given then this exact map will be
+    *                                 loaded.
+    * @arg container {string} The id of the HTML container in which to display the map.
+    * @arg options {Object} Configurable options for the map.
+    * @arg options.annotatable {boolean} Allow features on a map to be annotated (this
+    *                                    requires the map server to run in ``annotate``
+    *                                    mode and is only for authoring).
+    * @arg options.debug {boolean} Enable debugging mode (currently only shows the map's
+    *                              position in the web page's URL).
+    * @example
+    * const humanMap1 = mapManager.loadMap('humanV1', 'div-1');
+    *
+    * const humanMap2 = mapManager.loadMap('NCBITaxon:9606', 'div-2');
+    *
+    * const humanMap3 = mapManager.loadMap({describes: 'NCBITaxon:9606'}, 'div-3');
+    *
+    * const humanMap4 = mapManager.loadMap(
+    *                     {source: 'https://models.physiomeproject.org/workspace/585/rawfile/650adf9076538a4bf081609df14dabddd0eb37e7/Human_Body.pptx'},
+    *                     'div-4');
+    */
     loadMap(identifier, container, options={})
     //========================================
     {
@@ -517,7 +604,7 @@ export class MapManager
                     style: mapStyle,
                     options: mapOptions,
                     metadata: metadata,
-                    serialNumber: this._mapNumber
+                    number: this._mapNumber
                 }, resolve);
 
                 return flatmap;
