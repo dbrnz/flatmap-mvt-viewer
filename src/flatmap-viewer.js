@@ -133,6 +133,12 @@ class FlatMap
         this._map.dragRotate.disable();
         this._map.touchZoomRotate.disableRotation();
 
+        // Show tile boundaries when debugging
+
+        if ('debug' in mapDescription.options) {
+            this._map.showTileBoundaries = true;
+        }
+
         // Finish initialisation when all sources have loaded
 
         this._userInteractions = null;
