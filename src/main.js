@@ -1,8 +1,16 @@
 import { MapManager } from './flatmap-viewer';
 
-window.onload = function() {
+function errorHandler(msg)
+{
+    console.log(msg);
+    alert(msg);
+}
+
+window.onload = function()
+{
     const mapManager = new MapManager();
 
-    mapManager.loadMap('NCBITaxon:9606', 'map1');
-    mapManager.loadMap('demo', 'map2', { annotatable: true, debug: true });
+
+    mapManager.loadMap('demo', 'map1', { annotatable: true, debug: true })
+        .catch(error => errorHandler(error));
 };
