@@ -67,42 +67,13 @@ class PropertiesMap
 
 //==============================================================================
 
-class StyleRules
-{
-    constructor(flatmap)
-    {
-        this._flatmap = flatmap;
-        this._rulesMap = new Map();
-    }
-
-    addDeclarations(rulesUrl, selector, declarationList)
-    //==================================================
-    {
-        let properties = null;
-        if (this._rulesMap.has(selector)) {
-            properties = this._rulesMap.get(selector);
-        } else {
-            properties = new PropertiesMap(this._flatmap);
-            this._rulesMap.set(selector, properties);
-        }
-
-        for (let declaration of declarationList) {
-            properties.set(rulesUrl, declaration);
-        }
-    }
-}
-
-//==============================================================================
-
 export class StyleSheet
 {
     constructor(flatmap)
     {
+        this._flatmap = flatmap;
         this._parser = new cssparser.Parser();
-        this._classRules = new StyleRules(flatmap);
-        this._idRules = new StyleRules(flatmap);
-        this._typeRules = new StyleRules(flatmap);
-        this._universalProperties = new PropertiesMap(flatmap);
+        this._rulesMap = new Map();
     }
 
     static async create(flatmap)
@@ -134,6 +105,22 @@ export class StyleSheet
                     .then(text => this.addStyleRules_(responseUrl, text));
     }
 
+    addDeclarations_(rulesUrl, selector, declarationList)
+    //==================================================
+    {
+        let properties = null;
+        if (this._rulesMap.has(selector)) {
+            properties = this._rulesMap.get(selector);
+        } else {
+            properties = new PropertiesMap(this._flatmap);
+            this._rulesMap.set(selector, properties);
+        }
+
+        for (let declaration of declarationList) {
+            properties.set(rulesUrl, declaration);
+        }
+    }
+
     addStyleRules_(url, cssText)
     //==========================
     {
@@ -147,18 +134,7 @@ export class StyleSheet
                  && rule.value.type === 'DECLARATION_LIST') {
                     const declarations = rule.value.value
                     for (let selector of rule.selectors) {
-// Just have the one rules mapping and use `selector`` as the key...
-                        if (selector.startsWith('.')) {
-                            this._classRules.addDeclarations(url, selector, declarations);
-                        } else if (selector.startsWith('#')) {
-                            this._idRules.addDeclarations(url, selector, declarations);
-                        } else if (selector === '*') {
-                            for (let declaration of declarations) {
-                                this._universalProperties.set(url, declaration);
-                            }
-                        } else {
-                            this._typeRules.addDeclarations(url, selector, declarations);
-                        }
+                        this.addDeclarations_(url, selector, declarations);
                     }
                 }
             }
