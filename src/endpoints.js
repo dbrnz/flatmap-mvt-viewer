@@ -34,3 +34,19 @@ export function mapEndpoint(relativePath='')
 }
 
 //==============================================================================
+
+export async function loadJSON(relativePath)
+//=============================================
+{
+    const url = mapEndpoint(relativePath);
+    const response = await fetch(url, {
+        headers: { "Accept": "application/json; charset=utf-8" },
+        method: 'GET'
+    });
+    if (!response.ok) {
+        throw new Error(`Cannot access ${url}`);
+    }
+    return response.json();
+}
+
+//==============================================================================
