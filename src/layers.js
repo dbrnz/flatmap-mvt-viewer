@@ -113,10 +113,10 @@ class MapFeatureLayer
     activate(annotating=false)
     //========================
     {
-        for (const l of this._backgroundLayers) {
-            l.activate();
-        }
-        this._map.setPaintProperty(this._imageLayerId, 'raster-opacity', 1);
+//        for (const l of this._backgroundLayers) {
+//            l.activate();
+//        }
+//        this._map.setPaintProperty(this._imageLayerId, 'raster-opacity', 1);
         this.setBorderProperties_(true, annotating);
         this.setLineProperties_(true, annotating);
     }
@@ -124,10 +124,10 @@ class MapFeatureLayer
     deactivate()
     //==========
     {
-        for (const l of this._backgroundLayers) {
-            l.deactivate();
-        }
-        this._map.setPaintProperty(this._imageLayerId, 'raster-opacity', 0);
+//        for (const l of this._backgroundLayers) {
+//            l.deactivate();
+//        }
+//        this._map.setPaintProperty(this._imageLayerId, 'raster-opacity', 0);
         this.setBorderProperties_();
         this.setLineProperties_();
     }

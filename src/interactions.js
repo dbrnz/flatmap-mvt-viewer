@@ -112,7 +112,7 @@ export class UserInteractions
         }
         for (const layer of flatmap.layers) {
             if (layerBackgroundIds.indexOf(layer.id) < 0) {
-                this._layerManager.addLayer(layer);
+//                this._layerManager.addLayer(layer);
             }
         }
 
