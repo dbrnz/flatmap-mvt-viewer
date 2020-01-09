@@ -25,9 +25,6 @@ limitations under the License.
 // CSS parser from https://github.com/cwdoh/cssparser.js
 const cssparser = require('cssparser');
 
-// Specificity from https://github.com/keeganstreet/specificity
-const SPECIFICITY = require('specificity');
-
 //==============================================================================
 
 // TODO: Implement inheritance and initial values as per
