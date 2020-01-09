@@ -23,7 +23,7 @@ limitations under the License.
 //==============================================================================
 
 // CSS parser from https://github.com/cwdoh/cssparser.js
-const cssparser = require('cssparser');
+const cssparser = require('cssparser/lib/cssparser.js');
 
 //==============================================================================
 
