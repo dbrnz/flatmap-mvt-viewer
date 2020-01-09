@@ -125,42 +125,14 @@ function lineWidth_(width, layerActive=false, annotating=false)
 
 //==============================================================================
 
-export class FeatureFillLayer
-{
-    static style(id, source_id, layer_id)
-    {
-        return {
-            'id': id,
-            'source': source_id,
-            'source-layer': layer_id,
-            'type': 'fill',
-            'filter': [
-                '==',
-                '$type',
-                'Polygon'
-            ],
-            'paint': {
-                'fill-color': PAINT_STYLES['fill-color'],
-                'fill-opacity': [
-                    'case',
-                    ['boolean', ['feature-state', 'highlighted'], false], 0.5,
-                    0
-                ]
-            }
-        };
-    }
-}
-
-//==============================================================================
-
 export class FeatureBorderLayer
 {
-    static style(id, source_id, layer_id)
+    static style(sourceId, sourceLayer)
     {
         return {
-            'id': id,
-            'source': source_id,
-            'source-layer': layer_id,
+            'id': `${sourceLayer}-border`,
+            'source': sourceId,
+            'source-layer': sourceLayer,
             'type': 'line',
             'filter': [
                 '==',
@@ -183,14 +155,88 @@ export class FeatureBorderLayer
 
 //==============================================================================
 
+export class FeatureFillLayer
+{
+    static style(sourceId, sourceLayer, patternedFeatures)
+    {
+        const filter = [
+            'all',
+            [
+                '==',
+                '$type',
+                'Polygon'
+            ]
+        ];
+        const idFilter = ['!in', 'id'];
+        for (const feature of patternedFeatures) {
+            idFilter.push(feature.id);
+        }
+        filter.push(idFilter);
+
+        return {
+            'id': `${sourceLayer}-fill`,
+            'source': sourceId,
+            'source-layer': sourceLayer,
+            'type': 'fill',
+            'filter': filter,
+            'paint': {
+                'fill-color': [
+                    'case', [ '!=', ['feature-state', 'color'], null],
+                        ['feature-state', 'color'],
+                        PAINT_STYLES['fill-color'],
+                    ],
+            }
+        };
+    }
+}
+
+//==============================================================================
+
+export class FeaturePatternLayer
+{
+    static style(sourceId, sourceLayer, patternedFeatures)
+    {
+        const fillPattern = ['match', ['get', 'id']];
+        const filter = [
+            'all',
+            [
+                '==',
+                '$type',
+                'Polygon'
+            ]
+        ];
+        const idFilter = ['in', 'id'];
+        for (const feature of patternedFeatures) {
+            fillPattern.push(feature.id);
+            fillPattern.push(feature.pattern);
+            idFilter.push(feature.id);
+        }
+        filter.push(idFilter);
+        fillPattern.push('');
+
+        return {
+            'id': `${sourceLayer}-pattern`,
+            'source': sourceId,
+            'source-layer': sourceLayer,
+            'type': 'fill',
+            'filter': filter,
+            'paint': {
+                'fill-pattern': fillPattern,
+            }
+        };
+    }
+}
+
+//==============================================================================
+
 export class FeatureLineLayer
 {
-    static style(id, source_id, layer_id)
+    static style(sourceId, sourceLayer)
     {
         return {
-            'id': id,
-            'source': source_id,
-            'source-layer': layer_id,
+            'id': `${sourceLayer}-line`,
+            'source': sourceId,
+            'source-layer': sourceLayer,
             'type': 'line',
             'filter': [
                 '==',
@@ -198,8 +244,13 @@ export class FeatureLineLayer
                 'LineString'
             ],
             'paint': {
-                'line-color': lineColour(),
-                'line-opacity': lineOpacity(),
+                'line-color': 'green', /* [
+                    'case', [ '!=', ['feature-state', 'color'], null],
+                        ['feature-state', 'color'],
+                        PAINT_STYLES['fill-color'],
+                    ],
+//                lineColour(), */
+                'line-opacity': 1, // lineOpacity(),
                 'line-width': lineWidth_(PAINT_STYLES['line-stroke-width'])
             }
         };

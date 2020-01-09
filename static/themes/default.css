@@ -16,3 +16,6 @@ line {
 
 }
 
+#oval {
+    pattern: texture "../images/texture2.png";
+}

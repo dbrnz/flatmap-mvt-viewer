@@ -33,30 +33,37 @@ const FEATURE_SOURCE_ID = 'features';
 
 class MapFeatureLayer
 {
-    constructor(map, layer)
+    constructor(map, layer, features)
     {
         this._map = map;
         this._id = layer.id;
-        this._topLayerId = null;
-        this._backgroundLayers = [];
-        for (const l of layer.backgroundLayers) {
-            const backgroundImage = new MapImageLayer(map, l, this._id);
-            this._backgroundLayers.push(backgroundImage);
-            if (this._topLayerId === null) {
-                this._topLayerId = backgroundImage.imageLayerId;
+        this._styleLayerIds = [];
+
+        const patternedFeatures = [];
+        for (const feature of features) {
+            const mapFeature = utils.mapFeature(layer.id, feature.id);
+
+            for (let [key, value] of Object.entries(feature.style)) {
+                if (feature.type === 'Polygon') {
+                    if (key === 'pattern') {
+                        patternedFeatures.push({
+                            'id': feature.id,
+                            'pattern': value
+                        })
+                    }
+                }
+                if (key === 'colour') {
+                    this._map.setFeatureState(mapFeature, { 'color': value });
+                }
+
             }
         }
-        this._imageLayerId = `${layer.id}-image`;
-        this._map.addLayer(style.ImageLayer.style(this._imageLayerId, this._imageLayerId, 0));
-        if (this._topLayerId === null) {
-            this._topLayerId = this._imageLayerId;
-        }
-        this._fillLayerId = `${layer.id}-fill`;
-        this._map.addLayer(style.FeatureFillLayer.style(this._fillLayerId, FEATURE_SOURCE_ID, layer.id));
-        this._borderLayerId = `${layer.id}-border`;
-        this._map.addLayer(style.FeatureBorderLayer.style(this._borderLayerId, FEATURE_SOURCE_ID, layer.id));
-        this._lineLayerId = `${layer.id}-line`;
-        this._map.addLayer(style.FeatureLineLayer.style(this._lineLayerId, FEATURE_SOURCE_ID, layer.id));
+
+        this.addStyleLayer_(style.FeaturePatternLayer.style, patternedFeatures);
+        this.addStyleLayer_(style.FeatureFillLayer.style, patternedFeatures);
+
+        this._borderLayerId = this.addStyleLayer_(style.FeatureBorderLayer.style);
+        this._lineLayerId = this.addStyleLayer_(style.FeatureLineLayer.style);
 
     }
 
@@ -64,6 +71,21 @@ class MapFeatureLayer
     //======
     {
         return this._id;
+    }
+
+    get topStyleLayerId()
+    //===================
+    {
+        return this._styleLayerIds[0];
+    }
+
+    addStyleLayer_(styleFunction, options={})
+    //=======================================
+    {
+        const styleLayer = styleFunction(FEATURE_SOURCE_ID, this._id, options);
+        this._map.addLayer(styleLayer);
+        this._styleLayerIds.push(styleLayer.id);
+        return styleLayer.id;
     }
 
     setBorderProperties_(layerActive=false, annotating=false)
@@ -113,15 +135,10 @@ class MapFeatureLayer
     move(beforeLayer)
     //===============
     {
-        const beforeTopLayerId = beforeLayer ? beforeLayer._topLayerId : undefined;
-
-        for (const l of this._backgroundLayers) {
-            this._map.moveLayer(l.imageLayerId, beforeTopLayerId);
+        const beforeTopStyleLayerId = beforeLayer ? beforeLayer.topStyleLayerId : undefined;
+        for (const styleLayerId of this._styleLayerIds) {
+            this._map.moveLayer(styleLayerId, beforeTopStyleLayerId);
         }
-        this._map.moveLayer(this._imageLayerId, beforeTopLayerId);
-        this._map.moveLayer(this._fillLayerId, beforeTopLayerId);
-        this._map.moveLayer(this._borderLayerId, beforeTopLayerId);
-        this._map.moveLayer(this._lineLayerId, beforeTopLayerId);
     }
 }
 
@@ -196,16 +213,14 @@ export class LayerManager
         return this._activeLayerNames;
     }
 
-    addLayer(layer)
-    //=============
+    addLayer(layer, features)
+    //=======================
     {
         this._mapLayers.set(layer.id, layer);
 
-        const layers = layer.selectable ? new MapFeatureLayer(this._map, layer)
-                                        : new MapImageLayer(this._map, layer)
-
+        const featureLayer = new MapFeatureLayer(this._map, layer, features);
         const layerId = this._flatmap.mapLayerId(layer.id);
-        this._layers.set(layerId, layers);
+        this._layers.set(layerId, featureLayer);
 
         if (layer.selectable) {
             this._selectableLayerId = layerId;

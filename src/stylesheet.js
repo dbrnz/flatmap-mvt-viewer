@@ -36,36 +36,59 @@ const DEFAULT_STYLESHEET = './static/themes/default.css';
 
 //==============================================================================
 
-class StyleRule
+class PropertiesMap
 {
-    constructor(selector, styling, position)
+    constructor(flatmap)
     {
-        this._selector = selector;
-        this._styling = styling;
-        this._specificity = SPECIFICITY.calculate(selector)[0]['specificityArray'];
-        this._position = position;
+        this._flatmap = flatmap;
+        this._properties = new Map();
     }
 
-    get styling()
+    set(rulesUrl, declaration)
+    //========================
     {
-        return this._styling;
-    }
+        const property = declaration.property;
+        const value = declaration.value;
 
-    compare(other)
-    {
-        const order = SPECIFICITY.compare(this._specificity, other._specificity);
-        if (order != 0) {
-            return order;
+        if (property === 'pattern') {
+            if (value.type === 'SEQUENCE'
+             && value.value.length === 2) {
+                const patternId = value.value[0];
+                this._flatmap.addPattern(rulesUrl, patternId, value.value[1].slice(1, -1));
+                this._properties.set(property, patternId);
+            } else {
+                console.log("Invalid 'pattern' value");
+            }
         } else {
-            return (this._position > this._position) ?  1
-                 : (this._position < this._position) ? -1
-                 :  0;
+            this._properties.set(property, value);
         }
     }
+}
 
-    matches(feature)   // feature has `id`, `(Uberon) class` and `geometry`
+//==============================================================================
+
+class StyleRules
+{
+    constructor(flatmap)
     {
+        this._flatmap = flatmap;
+        this._rulesMap = new Map();
+    }
 
+    addDeclarations(rulesUrl, selector, declarationList)
+    //==================================================
+    {
+        let properties = null;
+        if (this._rulesMap.has(selector)) {
+            properties = this._rulesMap.get(selector);
+        } else {
+            properties = new PropertiesMap(this._flatmap);
+            this._rulesMap.set(selector, properties);
+        }
+
+        for (let declaration of declarationList) {
+            properties.set(rulesUrl, declaration);
+        }
     }
 }
 
@@ -73,59 +96,96 @@ class StyleRule
 
 export class StyleSheet
 {
-    constructor()
+    constructor(flatmap)
     {
         this._parser = new cssparser.Parser();
-        this._styleRules = [];
-        this._sequence = 0;
+        this._classRules = new StyleRules(flatmap);
+        this._idRules = new StyleRules(flatmap);
+        this._typeRules = new StyleRules(flatmap);
+        this._universalProperties = new PropertiesMap(flatmap);
     }
 
-    loadDefaultStylesheet()
-    //=====================
+    static async create(flatmap)
+    //==========================
     {
-        return this.fetchStyleRules_(DEFAULT_STYLESHEET);
+        const styleSheet = new StyleSheet(flatmap);
+        await styleSheet.initialize_();
+        return styleSheet;
     }
 
-    addStyleRules_(cssText)
-    //=====================
+    async initialize_()
+    //=================
     {
-        if (cssText.trim() === '') return;
-
-        const ast = this._parser.parse(cssText);
-        const rules = ast._props_.value;
-        for (let rule of rules) {
-            const selectors = cssparser.toSimple(rule._props_.selectors);
-            let styling = cssparser.toAtomic(rule._props_.value);
-            for (let selector of selectors) {
-                this._styleRules.push(new StyleRule(selector,
-                                                    styling,
-                                                    this._sequence));
-                this._sequence += 1;
-            }
-        }
-
-        this._styleRules.sort(function(a, b) => return a.compare(b));
+        await this.fetchStyleRules_(DEFAULT_STYLESHEET);
+        // TODO: load any map specific style rules...
     }
 
     async fetchStyleRules_(url)
     //=========================
     {
-        // Note: `fetch()` is a Promise
+        let responseUrl = '';
 
         return fetch(url)
-                    .then(response => response.text())
-                    .catch(error => console.error('Error getting stylesheet:', error))
-                    .then(text => {
-                        this.addStyleRules_(text);
-                    });
+                    .then(response => {
+                        responseUrl = response.url;
+                        return response.text();
+                    })
+                    .catch(error => console.error('Error fetching stylesheet:', error))
+                    .then(text => this.addStyleRules_(responseUrl, text));
     }
 
-    styling(feature)
-    //==============
+    addStyleRules_(url, cssText)
+    //==========================
     {
+        if (cssText.trim() === '') return;
+
+        const ast = this._parser.parse(cssText);
+        const rules =  ast.toDeepJSON();
+        if (rules.type === 'STYLESHEET') {
+            for (let rule of rules.value) {
+                if (rule.type === 'QUALIFIED_RULE'
+                 && rule.value.type === 'DECLARATION_LIST') {
+                    const declarations = rule.value.value
+                    for (let selector of rule.selectors) {
+// Just have the one rules mapping and use `selector`` as the key...
+                        if (selector.startsWith('.')) {
+                            this._classRules.addDeclarations(url, selector, declarations);
+                        } else if (selector.startsWith('#')) {
+                            this._idRules.addDeclarations(url, selector, declarations);
+                        } else if (selector === '*') {
+                            for (let declaration of declarations) {
+                                this._universalProperties.set(url, declaration);
+                            }
+                        } else {
+                            this._typeRules.addDeclarations(url, selector, declarations);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    styling(selector)
+    //===============
+    {
+        // TODO: We need to cache where possible...
+
+        let colour = (selector.type === 'Polygon') ? 'blue' : 'green';
+        if ('classes' in selector) {
+            colour = '#F88';
+        }
+
         let styling = {};
+
+        styling['colour'] = colour;
+
+        if (selector.id === 'oval') {
+            styling['pattern'] = 'texture';
+        }
+
+/*
         for (let rule of this._styleRules) {
-            if (rule.matches(feature)) {
+            if (rule.matches(selector)) {
                 const style = rule.styling;
                 if (style.type === 'DECLARATION_LIST') {
                     for (let declaration of style.value) {
@@ -134,6 +194,7 @@ export class StyleSheet
                 }
             }
         }
+*/
         return styling;
     }
 }

@@ -116,6 +116,47 @@ export class UserInteractions
             }
         }
 
+        // Style all features on every layer...
+        //     For all features in layer
+        //         setFeatureState(feature, { style: Style(layer, feature)} )
+        //         NB. "feature-state" is only for paint properties that support
+        //         data-driven styling...
+        //         fill-opacity, fill-color, fill-outline-color, fill-pattern
+        //         line-opacity, line-color, line-width
+
+        const styleSheet = this._flatmap.styleSheet;
+
+        for (const layer of flatmap.layers) {
+            const featureStyles = [];
+
+            for (const layerFeature of layer['features']) {
+                const styleSelector = {
+                    'layer': layer.id,
+                    'type': layerFeature.type
+                };
+
+                const ann = this._flatmap.getAnnotation(layerFeature.id);
+                if (ann != null) {
+                    const mapFeature = utils.mapFeature(layer.id, layerFeature.id);
+                     this._map.setFeatureState(mapFeature, { 'annotated': true });
+                    if ('error' in ann) {
+                        this._map.setFeatureState(mapFeature, { 'annotation-error': true });
+                        console.log(`Annotation error, ${ann.layer}: ${ann.error} (${ann.text})`);
+                    }
+
+                    styleSelector['id'] = ann.id;
+                    styleSelector['classes'] = ann.models;
+                }
+
+                featureStyles.push({
+                    'id': layerFeature.id,
+                    'type': layerFeature.type,
+                    'style': styleSheet.styling(styleSelector)
+                });
+            }
+            this._layerManager.addLayer(layer, featureStyles);
+        }
+
         // Add a layer switcher if we have more than one selectable layer
 
         this._layerSwitcher = null;
@@ -127,18 +168,6 @@ export class UserInteractions
             const selectableLayerId = this._layerManager.lastSelectableLayerId;
             this.activateLayer(selectableLayerId);
             this._messagePasser.broadcast('flatmap-activate-layer', selectableLayerId);
-        }
-
-        // Flag features that have annotations
-        // Also flag those features that are models of something
-
-        for (const [id, ann] of flatmap.annotations) {
-            const feature = utils.mapFeature(ann.layer, id);
-            this._map.setFeatureState(feature, { 'annotated': true });
-            if ('error' in ann) {
-                this._map.setFeatureState(feature, { 'annotation-error': true });
-                console.log(`Annotation error, ${ann.layer}: ${ann.error} (${ann.text})`);
-            }
         }
 
         // Display a tooltip at the mouse pointer

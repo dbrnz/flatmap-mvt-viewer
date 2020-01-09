@@ -37,6 +37,7 @@ import '../static/flatmap-viewer.css';
 
 import {loadJSON, mapEndpoint} from './endpoints.js';
 import {parser} from './annotation.js';
+import {StyleSheet} from './stylesheet.js';
 import {UserInteractions} from './interactions.js';
 
 import * as utils from './utils.js';
@@ -72,6 +73,11 @@ class FlatMap
                           && metadata.geometry.includes('Polygon');
             this.addAnnotation_(featureId, ann);
         }
+
+        // Stylesheet loading is deferred until `finalise_()` as this is an asynchronous
+        // process
+
+        this._styleSheet = null;
 
         // Set base of source URLs in map's style
 
@@ -145,9 +151,13 @@ class FlatMap
         this._map.on('load', this.finalise_.bind(this));
     }
 
-    finalise_()
-    //=========
+    async finalise_()
+    //===============
     {
+        // Load stylesheets/theme for map
+
+        this._styleSheet = await StyleSheet.create(this);
+
         // Layer sources have now loaded so finish setting up
 
         this._userInteractions = new UserInteractions(this, ui => {
@@ -161,6 +171,30 @@ class FlatMap
                 this._resolve(this);
             }
         });
+    }
+
+    /**
+     * Load patterns/textures referenced in style rules.
+     */
+    loadPatternImage_(url)
+    //====================
+    {
+        return new Promise((resolve, reject) => {
+            this._map.loadImage(url, (error, image) => {
+                if (error) reject(error);
+                else resolve(image);
+            });
+        });
+    }
+
+    async addPattern(rulesUrl, id, path)
+    //==================================
+    {
+        const url = path.startsWith('/') ? this.urlFor(path)
+                                         : new URL(path, rulesUrl);
+        const patternImage = await this.loadPatternImage_(url);
+
+        this._map.addImage(id, patternImage);
     }
 
     urlFor(localPath)
@@ -252,6 +286,12 @@ class FlatMap
     //============================
     {
         return this._userInteractions.selectedFeatureLayerName;
+    }
+
+    get styleSheet()
+    //==============
+    {
+        return this._styleSheet
     }
 
     fitBounds()
