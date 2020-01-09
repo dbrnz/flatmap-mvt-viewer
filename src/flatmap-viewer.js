@@ -35,7 +35,7 @@ import '../static/flatmap-viewer.css';
 
 //==============================================================================
 
-import {mapEndpoint} from './endpoints.js';
+import {loadJSON, mapEndpoint} from './endpoints.js';
 import {parser} from './annotation.js';
 import {UserInteractions} from './interactions.js';
 
@@ -77,12 +77,12 @@ class FlatMap
 
         for (const [id, source] of Object.entries(mapDescription.style.sources)) {
             if (source.url) {
-                source.url = this.addUrlBase_(source.url);
+                source.url = this.urlFor(source.url);
             }
             if (source.tiles) {
                 const tiles = []
                 for (const tileUrl of source.tiles) {
-                    tiles.push(this.addUrlBase_(tileUrl));
+                    tiles.push(this.urlFor(tileUrl));
                 }
                 source.tiles = tiles;
             }
@@ -148,7 +148,7 @@ class FlatMap
     finalise_()
     //=========
     {
-        // Layers have now loaded so finish setting up
+        // Layer sources have now loaded so finish setting up
 
         this._userInteractions = new UserInteractions(this, ui => {
             if ('state' in this._options) {
@@ -163,15 +163,15 @@ class FlatMap
         });
     }
 
-    addUrlBase_(url)
-    //==============
+    urlFor(localPath)
+    //===============
     {
-        if (url.startsWith('/')) {
-            return `${mapEndpoint()}flatmap/${this._id}${url}`; // We don't want embedded `{` and `}` characters escaped
-        } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            console.log(`Invalid URL (${url}) in map's sources`);
+        if (localPath.startsWith('/')) {
+            return `${mapEndpoint()}flatmap/${this._id}${localPath}`; // We don't want embedded `{` and `}` characters escaped
+        } else if (!localPath.startsWith('http://') && !localPath.startsWith('https://')) {
+            console.log(`Invalid URL (${localPath}) in map's sources`);
         }
-        return url;
+        return localPath;
     }
 
     /**
@@ -437,8 +437,31 @@ export class MapManager
     /* Create a MapManager */
     constructor()
     {
-        this._maps = null;
+        this._initialised = false;
+        this._initialisingMutex = new utils.Mutex();
+
+        this._mapIndex = null;
         this._mapNumber = 0;
+    }
+
+    async ensureInitialised_()
+    //========================
+    {
+        return await this._initialisingMutex.dispatch(async () => {
+            if (!this._initialised) {
+                this._mapIndex = await loadJSON('');
+                this._initialised = true;
+            }
+        });
+    }
+
+    findMap_(identifier)
+    //==================
+    {
+        return new Promise(async(resolve, reject) => {
+            await this.ensureInitialised_();
+            resolve(this.lookupMap_(identifier));
+        });
     }
 
     latestMap_(mapDescribes)
@@ -446,7 +469,7 @@ export class MapManager
     {
         let latestMap = null;
         let lastCreatedTime = '';
-        for (const map of this._maps) {
+        for (const map of this._mapIndex) {
             if (mapDescribes === map.describes
              || mapDescribes === map.id
              || mapDescribes === map.source) {
@@ -481,27 +504,6 @@ export class MapManager
             mapDescribes = identifier;
         }
         return this.latestMap_(mapDescribes);
-    }
-
-    findMap_(identifier)
-    //==================
-    {
-        return new Promise(async(resolve, reject) => {
-            if (this._maps === null) {
-                // Find what maps we have available
-                const response = await fetch(mapEndpoint(), {
-                    headers: { "Accept": "application/json; charset=utf-8" },
-                    method: 'GET'
-                });
-                if (!response.ok) {
-                    throw new Error(`Cannot access ${mapEndpoint()}`);
-                }
-                this._maps = await response.json();
-                resolve(this.lookupMap_(identifier));
-            } else {
-                resolve(this.lookupMap_(identifier));
-            }
-        });
     }
 
    /**
@@ -542,24 +544,18 @@ export class MapManager
             try {
                 const map = await this.findMap_(identifier);
                 if (map === null) {
-                    throw new Error(`Unknown map for ${JSON.stringify(identifier)}`);
+                    reject(new Error(`Unknown map for ${JSON.stringify(identifier)}`));
                 };
+
                 // Load the maps index file (its options)
 
-                const optionsResponse = await fetch(mapEndpoint(`flatmap/${map.id}/`), {
-                    headers: { "Accept": "application/json; charset=utf-8" },
-                    method: 'GET'
-                });
-                if (!optionsResponse.ok) {
-                    throw new Error(`Missing index file for map '${map.id}'`);
-                }
-                const mapOptions = await optionsResponse.json();
+                const mapOptions = await loadJSON(`flatmap/${map.id}/`);
 
                 if (map.id !== mapOptions.id) {
                     throw new Error(`Map '${map.id}' has wrong ID in index`);
                 }
 
-                // Set the map's options
+                // Update the loaded options with any local configuration
 
                 for (const [name, value] of Object.entries(options)) {
                     mapOptions[name] = value;
@@ -580,25 +576,11 @@ export class MapManager
 
                 // Get the map's style file
 
-                const styleResponse = await fetch(mapEndpoint(`flatmap/${map.id}/style`), {
-                    headers: { "Accept": "application/json; charset=utf-8" },
-                    method: 'GET'
-                });
-                if (!styleResponse.ok) {
-                    throw new Error(`Missing style file for map '${map.id}'`);
-                }
-                const mapStyle = await styleResponse.json();
+                const mapStyle = await loadJSON(`flatmap/${map.id}/style`);
 
                 // Get the map's metadata
 
-                const metadataResponse = await fetch(mapEndpoint(`flatmap/${map.id}/metadata`), {
-                    headers: { "Accept": "application/json; charset=utf-8" },
-                    method: 'GET'
-                });
-                if (!metadataResponse.ok) {
-                    reject(new Error(`Missing metadata for map '${map.id}'`));
-                }
-                const metadata = await metadataResponse.json();
+                const metadata = await loadJSON(`flatmap/${map.id}/metadata`);
 
                 // Display the map
 

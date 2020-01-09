@@ -68,3 +68,41 @@ export class List extends Array {
 }
 
 //==============================================================================
+
+// From https://spin.atomicobject.com/2018/09/10/javascript-concurrency/
+
+export class Mutex
+{
+    constructor()
+    {
+        this._mutex = Promise.resolve();
+    }
+
+    lock()
+    //====
+    {
+        let begin = unlock => {};
+
+        this._mutex = this._mutex.then(() => {
+            return new Promise(begin);
+        });
+
+        return new Promise(res => {
+            begin = res;
+        });
+    }
+
+    async dispatch(fn)
+    //================
+    {
+        const unlock = await this.lock();
+
+        try {
+            return await Promise.resolve(fn());
+        } finally {
+            unlock();
+        }
+    }
+}
+
+//==============================================================================
