@@ -36,6 +36,7 @@ import '../static/flatmap-viewer.css';
 //==============================================================================
 
 import {loadJSON, mapEndpoint} from './endpoints.js';
+import {ModelOntologies} from './ontologies.js';
 import {parser} from './annotation.js';
 import {StyleSheet} from './stylesheet.js';
 import {UserInteractions} from './interactions.js';
@@ -476,6 +477,7 @@ export class MapManager
 
         this._mapIndex = null;
         this._mapNumber = 0;
+        this._modelOntologies = null;
     }
 
     async ensureInitialised_()
@@ -484,6 +486,7 @@ export class MapManager
         return await this._initialisingMutex.dispatch(async () => {
             if (!this._initialised) {
                 this._mapIndex = await loadJSON('');
+                this._modelOntologies = await ModelOntologies.new();
                 this._initialised = true;
             }
         });
