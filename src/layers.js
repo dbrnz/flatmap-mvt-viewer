@@ -22,6 +22,8 @@ limitations under the License.
 
 //==============================================================================
 
+import {MapFeature} from './features.js';
+
 import * as style from './styling.js';
 import * as utils from './utils.js';
 
@@ -31,19 +33,30 @@ const FEATURE_SOURCE_ID = 'features';
 
 //==============================================================================
 
-class MapFeatureLayer
+/**
+ * A set of Mapbox style layers that constitute a flatmap layer.
+ *
+ * Each flatmap layer corresponds to a slide in the source Powerpoint document,
+ * with features in the layer corresponding to the shapes on the slide. A feature's
+ * style (colour, etc) though does not come from the Powerpoint shape but instead
+ * is derived from the features anatomical classes and a set of styling rules.
+ */
+class MapboxStyleLayers
 {
-    constructor(map, layer, features)
+    constructor(map, id, features, stylesheet)
     {
         this._map = map;
-        this._id = layer.id;
+        this._id = id;
         this._styleLayerIds = [];
 
         const texturedFeatures = [];
         for (const feature of features) {
-            const mapboxFeature = utils.mapboxFeature(layer.id, feature.id);
+            const mapboxFeature = utils.mapboxFeature(id, feature.id);
 
-            for (let [key, value] of Object.entries(feature.style)) {
+            const styling = stylesheet.styling(feature);
+
+            for (let [key, value] of Object.entries(styling)) {
+
                 if (feature.type === 'Polygon') {
                     if (key === 'texture') {
                         texturedFeatures.push({
@@ -55,7 +68,13 @@ class MapFeatureLayer
                 if (key === 'colour') {
                     this._map.setFeatureState(mapboxFeature, { 'color': value });
                 }
+            }
 
+            if (feature.annotated) {
+                this._map.setFeatureState(mapboxFeature, { 'annotated': true });
+                if (feature.annotationError) {
+                    this._map.setFeatureState(mapboxFeature, { 'annotation-error': true });
+                }
             }
         }
 

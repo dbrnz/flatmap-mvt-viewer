@@ -124,37 +124,10 @@ export class UserInteractions
         //         fill-opacity, fill-color, fill-outline-color, fill-pattern
         //         line-opacity, line-color, line-width
 
-        const styleSheet = this._flatmap.styleSheet;
-
         for (const layer of flatmap.layers) {
-            const featureStyles = [];
-
-            for (const layerFeature of layer['features']) {
-                const styleSelector = {
-                    'layer': layer.id,
-                    'type': layerFeature.type
-                };
-
-                const ann = this._flatmap.getAnnotation(layerFeature.id);
-                if (ann != null) {
-                    const mapboxFeature = utils.mapboxFeature(layer.id, layerFeature.id);
-                    this._map.setFeatureState(mapboxFeature, { 'annotated': true });
-                    if ('error' in ann) {
-                        this._map.setFeatureState(mapboxFeature, { 'annotation-error': true });
-                        console.log(`Annotation error, ${ann.layer}: ${ann.error} (${ann.text})`);
-                    }
-
-                    styleSelector['id'] = ann.id;
-                    styleSelector['classes'] = ann.models;
-                }
-
-                featureStyles.push({
-                    'id': layerFeature.id,
-                    'type': layerFeature.type,
-                    'style': styleSheet.styling(styleSelector)
-                });
+            if (!layer.background_for) {
+                this._layerManager.addLayer(layer);
             }
-            this._layerManager.addLayer(layer, featureStyles);
         }
 
         // Add a layer switcher if we have more than one selectable layer
