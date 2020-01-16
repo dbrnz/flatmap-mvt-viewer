@@ -359,12 +359,12 @@ class FlatMap
     //=================================
     {
         let updateAnnotations = true;
-        const mapFeature = utils.mapFeature(ann.layer, featureId);
+        const mapboxFeature = utils.mapboxFeature(ann.layer, featureId);
         if (featureId in this._metadata) {
             if (ann.text === '') {
                 delete this._metadata[featureId];
                 this.delAnnotation_(featureId, ann);
-                this._map.removeFeatureState(mapFeature);
+                this._map.removeFeatureState(mapboxFeature);
             } else if (ann.text !== this._metadata[featureId].annotation) {
                 if (ann.layer !== this._metadata[featureId].layer) {
                     console.log(`Annotation layer mismatch: ${ann} and ${this._metadata[featureId]}`);
@@ -389,7 +389,7 @@ class FlatMap
                     layer: ann.layer
                 }
                 this.addAnnotation_(featureId, ann);
-                this._map.setFeatureState(mapFeature, { 'annotated': true });
+                this._map.setFeatureState(mapboxFeature, { 'annotated': true });
             } else {
                 updateAnnotations = false;
             }
@@ -397,12 +397,12 @@ class FlatMap
 
         if ('error' in ann) {
             this._metadata[featureId].error = ann.error;
-            this._map.setFeatureState(mapFeature, { 'annotation-error': true });
+            this._map.setFeatureState(mapboxFeature, { 'annotation-error': true });
         } else {
             if (featureId in this._metadata) {
                 delete this._metadata[featureId].error;
             }
-            this._map.removeFeatureState(mapFeature, 'annotation-error');
+            this._map.removeFeatureState(mapboxFeature, 'annotation-error');
         }
 
         if (updateAnnotations) {

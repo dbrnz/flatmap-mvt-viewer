@@ -22,7 +22,7 @@ limitations under the License.
 
 //==============================================================================
 
-export function mapFeature(layer, id)
+export function mapboxFeature(layer, id)
 {
     return {
         id: id.split('-')[1],

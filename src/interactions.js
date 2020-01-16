@@ -137,10 +137,10 @@ export class UserInteractions
 
                 const ann = this._flatmap.getAnnotation(layerFeature.id);
                 if (ann != null) {
-                    const mapFeature = utils.mapFeature(layer.id, layerFeature.id);
-                     this._map.setFeatureState(mapFeature, { 'annotated': true });
+                    const mapboxFeature = utils.mapboxFeature(layer.id, layerFeature.id);
+                    this._map.setFeatureState(mapboxFeature, { 'annotated': true });
                     if ('error' in ann) {
-                        this._map.setFeatureState(mapFeature, { 'annotation-error': true });
+                        this._map.setFeatureState(mapboxFeature, { 'annotation-error': true });
                         console.log(`Annotation error, ${ann.layer}: ${ann.error} (${ann.text})`);
                     }
 
@@ -296,7 +296,7 @@ export class UserInteractions
                 const featureId = this._flatmap.featureIdForUrl(featureUrl);
                 if (featureId) {
                     const ann = this._flatmap.getAnnotation(featureId);
-                    const feature = utils.mapFeature(ann.layer, featureId);
+                    const feature = utils.mapboxFeature(ann.layer, featureId);
                     this._map.setFeatureState(feature, { "highlighted": true });
                     this._highlightedFeatures.push(feature);
                     if (ann.queryable) {

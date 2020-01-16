@@ -41,7 +41,7 @@ class MapFeatureLayer
 
         const patternedFeatures = [];
         for (const feature of features) {
-            const mapFeature = utils.mapFeature(layer.id, feature.id);
+            const mapboxFeature = utils.mapboxFeature(layer.id, feature.id);
 
             for (let [key, value] of Object.entries(feature.style)) {
                 if (feature.type === 'Polygon') {
@@ -53,7 +53,7 @@ class MapFeatureLayer
                     }
                 }
                 if (key === 'colour') {
-                    this._map.setFeatureState(mapFeature, { 'color': value });
+                    this._map.setFeatureState(mapboxFeature, { 'color': value });
                 }
 
             }
