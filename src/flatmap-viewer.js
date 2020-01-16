@@ -53,10 +53,10 @@ class FlatMap
     constructor(container, mapDescription, resolve)
     {
         this._id = mapDescription.id;
+        this._instanceId = `${mapDescription.id}-${mapDescription.number}`;
         this._source = mapDescription.source;
         this._created = mapDescription.created;
         this._describes = mapDescription.describes;
-        this._mapNumber = mapDescription.number;
         this._resolve = resolve;
 
         this._idToAnnotation = new Map();
@@ -231,7 +231,7 @@ class FlatMap
     }
 
     /**
-     * The map's id as specified at generation time.
+     * The map's identifier.
      *
      * @type string
      */
@@ -242,20 +242,14 @@ class FlatMap
     }
 
     /**
-     * A unique identifier for the map within the viewer.
+     * An identifier for this instance of the map within the viewer.
      *
      * @type string
      */
-    get uniqueId()
-    //============
+    get instanceId()
+    //==============
     {
-        return `${this._id}-${this._mapNumber}`;
-    }
-
-    get activeLayerNames()
-    //====================
-    {
-        return this._userInteractions.activeLayerNames;
+        return this._instanceId;
     }
 
     get annotatable()
@@ -433,10 +427,10 @@ class FlatMap
         this._map.resize();
     }
 
-    mapLayerId(name)
-    //==============
+    fullLayerId(layerId)
+    //==================
     {
-        return `${this.uniqueId}/${name}`;
+        return `${this._instanceId}/${layerId}`;
     }
 
     getIdentifier()

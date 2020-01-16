@@ -202,15 +202,15 @@ export class LayerManager
         this._layers = new Map;
         this._mapLayers = new Map;
         this._activeLayers = [];
-        this._activeLayerNames = [];
+        this._activeLayerIds = [];
         this._selectableLayerId = '';
         this._selectableLayerCount = 0;
     }
 
-    get activeLayerNames()
-    //====================
+    get activeLayerIds()
+    //==================
     {
-        return this._activeLayerNames;
+        return this._activeLayerIds;
     }
 
     addLayer(layer, features)
@@ -219,11 +219,11 @@ export class LayerManager
         this._mapLayers.set(layer.id, layer);
 
         const featureLayer = new MapFeatureLayer(this._map, layer, features);
-        const layerId = this._flatmap.mapLayerId(layer.id);
-        this._layers.set(layerId, featureLayer);
+        const fullLayerId = this._flatmap.fullLayerId(layer.id);
+        this._layers.set(fullLayerId, featureLayer);
 
         if (layer.selectable) {
-            this._selectableLayerId = layerId;
+            this._selectableLayerId = fullLayerId;
             this._selectableLayerCount += 1;
         }
     }
@@ -246,63 +246,63 @@ export class LayerManager
         return this._selectableLayerId;
     }
 
-    layerQueryable(layerName)
-    //========================
+    layerQueryable(layerId)
+    //=====================
     {
-        const layer = this._mapLayers.get(layerName);
+        const layer = this._mapLayers.get(layerId);
         return layer['queryable-nodes'];
     }
 
-    activate(layerId, annotating=false)
-    //=================================
+    activate(fullLayerId, annotating=false)
+    //=====================================
     {
-        const layer = this._layers.get(layerId);
+        const layer = this._layers.get(fullLayerId);
         if (layer !== undefined) {
             layer.activate(annotating);
             if (this._activeLayers.indexOf(layer) < 0) {
                 this._activeLayers.push(layer);
-                this._activeLayerNames.push(layer.id);
+                this._activeLayerIds.push(layer.id);
             }
         }
     }
 
-    deactivate(layerId)
-    //=================
+    deactivate(fullLayerId)
+    //=====================
     {
-        const layer = this._layers.get(layerId);
+        const layer = this._layers.get(fullLayerId);
         if (layer !== undefined) {
             layer.deactivate();
             const index = this._activeLayers.indexOf(layer);
             if (index >= 0) {
                 delete this._activeLayers[index];
                 this._activeLayers.splice(index, 1);
-                delete this._activeLayerNames[index];
-                this._activeLayerNames.splice(index, 1);
+                delete this._activeLayerIds[index];
+                this._activeLayerIds.splice(index, 1);
             }
         }
     }
 
-    makeUppermost(layerId)
-    //====================
+    makeUppermost(fullLayerId)
+    //========================
     {
         // position before top layer
     }
 
-    makeLowest(layerId)
-    //=================
+    makeLowest(fullLayerId)
+    //=====================
     {
         // position after bottom layer (before == undefined)
     }
 
 
-    lower(layerId)
-    //============
+    lower(fullLayerId)
+    //================
     {
         // position before second layer underneath...
     }
 
-    raise(layerId)
-    //============
+    raise(fullLayerId)
+    //================
     {
         // position before layer above...
     }

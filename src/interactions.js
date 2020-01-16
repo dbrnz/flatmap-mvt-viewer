@@ -62,7 +62,7 @@ export class UserInteractions
         this._flatmap = flatmap;
         this._map = flatmap.map;
         this._userInterfaceLoadedCallback =  userInterfaceLoadedCallback;
-        this._queryInterface = new QueryInterface(flatmap.id);
+        this._queryInterface = new QueryInterface(flatmap);
 
         this._selectedFeature = null;
         this._highlightedFeatures = [];
@@ -82,7 +82,7 @@ export class UserInteractions
 
         // To pass messages with other applications
 
-        this._messagePasser = new MessagePasser(flatmap.uniqueId, json => this.processMessage_(json));
+        this._messagePasser = new MessagePasser(flatmap.instanceId, json => this.processMessage_(json));
 
          // Manage our layers
 
@@ -166,7 +166,7 @@ export class UserInteractions
             this._map.addControl(this._layerSwitcher);
         } else if (this._layerManager.selectableLayerCount === 1) {
             const selectableLayerId = this._layerManager.lastSelectableLayerId;
-            this.activateLayer(selectableLayerId);
+            this.activateLayer_(selectableLayerId);
             this._messagePasser.broadcast('flatmap-activate-layer', selectableLayerId);
         }
 
@@ -219,7 +219,7 @@ export class UserInteractions
         return {
             center: this._map.getCenter().toArray(),
             zoom: this._map.getZoom(),
-            layers: this.activeLayerNames
+            layers: this.activeLayerIds_
         };
     }
 
@@ -231,7 +231,7 @@ export class UserInteractions
         if ('layers' in state) {
             // We tell the layer manager the required state of a layer
             // and its controller will broadcast activation/deactivation messages
-            for (const layerId of this.activeLayerIds) {
+            for (const layerId of this.activeLayerIds_) {
                 this._layerSwitcher.setState(layerId, false);
             }
             for (name of state.layers) {
@@ -257,57 +257,39 @@ export class UserInteractions
         return this._flatmap.annotatable && this._annotator.enabled;
     }
 
-    get activeLayerNames()
+    get activeLayerIds_()
+    //===================
+    {
+        return this._layerManager.activeLayerIds;
+    }
+
+    activateActiveLayers()
     //====================
     {
-        return this._layerManager.activeLayerNames;
-    }
-
-    get activeLayerIds()
-    //==================
-    {
-        const mapLayers = [];
-        for (const name of this._layerManager.activeLayerNames) {
-            mapLayers.push(this._flatmap.mapLayerId(name));
-        }
-        return mapLayers;
-    }
-
-    activateLayer(layerId)
-    //====================
-    {
-        this._layerManager.activate(layerId, this.annotating);
-    }
-
-    activateLayers(layerIds)
-    //======================
-    {
-        for (const layerId of layerIds) {
-            this.activateLayer(layerId);
+        for (const id of this.activeLayerIds_) {
+            this.activateLayer_(id);
         }
     }
 
-    deactivateLayer(layerId)
-    //======================
+    activateLayer_(fullLayerId)
+    //=========================
     {
-        this._layerManager.deactivate(layerId);
+        this._layerManager.activate(fullLayerId, this.annotating);
     }
 
-    deactivateLayers()
-    //================
+    deactivateLayer_(fullLayerId)
+    //===========================
     {
-        for (const layerId of this.activeLayerIds) {
-            this.deactivateLayer(layerId);
-        }
+        this._layerManager.deactivate(fullLayerId);
     }
 
     processMessage_(msg)
     //==================
     {
         if (msg.action === 'flatmap-activate-layer') {
-            this.activateLayer(msg.resource);
+            this.activateLayer_(msg.resource);
         } else if (msg.action === 'flatmap-deactivate-layer') {
-            this.deactivateLayer(msg.resource);
+            this.deactivateLayer_(msg.resource);
         } else if (msg.action === 'flatmap-query-results') {
             let modelList = [];
             for (const featureUrl of msg.resource) {
@@ -380,7 +362,7 @@ export class UserInteractions
         // Get the features covering the event's point that are in the active layers
 
         return this._map.queryRenderedFeatures(event.point).filter(f => {
-            return (this.activeLayerNames.indexOf(f.sourceLayer) >= 0)
+            return (this.activeLayerIds_.indexOf(f.sourceLayer) >= 0)
                 && ('id' in f.properties);
             }
         );

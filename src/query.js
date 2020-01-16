@@ -34,15 +34,15 @@ import {MessagePasser} from './messages.js';
 
 export class QueryInterface
 {
-    constructor(mapId)
+    constructor(flatmap)
     {
-        this._mapId = mapId;
+        this._mapId = flatmap.id;
         this._store = new N3.Store();
         this._parser = new N3.Parser();
         this.loadStore_().then(() => {
             this._engine = newEngine();
             // Only now are we ready to start accepting queries...
-            this._messagePasser = new MessagePasser('query-interface', json => {});
+            this._messagePasser = new MessagePasser(`${flatmap.instanceId}-query-interface`, json => {});
         }, err => console.log(err));
     }
 
@@ -69,7 +69,6 @@ export class QueryInterface
             }
         });
     }
-
 
     async query(type, resource, models)
     //=================================

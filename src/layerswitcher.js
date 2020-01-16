@@ -35,17 +35,17 @@ class LayerControl
     constructor(flatmap)
     {
         //  To broadcast an 'flatmap-activate-layer LAYER_ID' message
-        this._messagePasser = new MessagePasser(`${flatmap.uniqueId}-layerswitcher`, json => {});
+        this._messagePasser = new MessagePasser(`${flatmap.instanceId}-layerswitcher`, json => {});
 
         this._layerIdToController = new Map();
         this._layerIdToDescription = new Map();
         for (const layer of flatmap.layers) {
             if (layer.selectable && layer.description !== '') {
-                const layerId = flatmap.mapLayerId(layer.id);
+                const fullLayerId = flatmap.fullLayerId(layer.id);
                 this[layer.description] = layer.selected;
-                this._layerIdToDescription.set(layerId, layer.description);
+                this._layerIdToDescription.set(fullLayerId, layer.description);
                 if (layer.selected) {
-                    this._messagePasser.broadcast('flatmap-activate-layer', layerId);
+                    this._messagePasser.broadcast('flatmap-activate-layer', fullLayerId);
                 }
             }
         }
