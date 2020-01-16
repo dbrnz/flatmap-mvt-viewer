@@ -156,7 +156,7 @@ class FlatMap
     {
         // Load stylesheets/theme for map
 
-        this._styleSheet = await StyleSheet.create(this);
+        this._styleSheet = await StyleSheet.new(this);
 
         // Layer sources have now loaded so finish setting up
 

@@ -76,8 +76,8 @@ export class StyleSheet
         this._rulesMap = new Map();
     }
 
-    static async create(flatmap)
-    //==========================
+    static async new(flatmap)
+    //=======================
     {
         const styleSheet = new StyleSheet(flatmap);
         await styleSheet.initialize_();
