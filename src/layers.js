@@ -39,16 +39,16 @@ class MapFeatureLayer
         this._id = layer.id;
         this._styleLayerIds = [];
 
-        const patternedFeatures = [];
+        const texturedFeatures = [];
         for (const feature of features) {
             const mapboxFeature = utils.mapboxFeature(layer.id, feature.id);
 
             for (let [key, value] of Object.entries(feature.style)) {
                 if (feature.type === 'Polygon') {
-                    if (key === 'pattern') {
-                        patternedFeatures.push({
+                    if (key === 'texture') {
+                        texturedFeatures.push({
                             'id': feature.id,
-                            'pattern': value
+                            'texture': value
                         })
                     }
                 }
@@ -59,8 +59,8 @@ class MapFeatureLayer
             }
         }
 
-        this.addStyleLayer_(style.FeaturePatternLayer.style, patternedFeatures);
-        this.addStyleLayer_(style.FeatureFillLayer.style, patternedFeatures);
+        this.addStyleLayer_(style.FeaturePatternLayer.style, texturedFeatures);
+        this.addStyleLayer_(style.FeatureFillLayer.style, texturedFeatures);
 
         this._borderLayerId = this.addStyleLayer_(style.FeatureBorderLayer.style);
         this._lineLayerId = this.addStyleLayer_(style.FeatureLineLayer.style);

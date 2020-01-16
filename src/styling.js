@@ -157,21 +157,29 @@ export class FeatureBorderLayer
 
 export class FeatureFillLayer
 {
-    static style(sourceId, sourceLayer, patternedFeatures)
+    static style(sourceId, sourceLayer, texturedFeatures)
     {
-        const filter = [
-            'all',
-            [
-                '==',
-                '$type',
-                'Polygon'
-            ]
+        let filter = [
+            '==',
+            '$type',
+            'Polygon'
         ];
-        const idFilter = ['!in', 'id'];
-        for (const feature of patternedFeatures) {
-            idFilter.push(feature.id);
+
+        if (texturedFeatures.length !== 0) {
+            filter = [
+                'all',
+                [
+                    '==',
+                    '$type',
+                    'Polygon'
+                ]
+            ];
+            const idFilter = ['!in', 'id'];
+            for (const feature of texturedFeatures) {
+                idFilter.push(feature.id);
+            }
+            filter.push(idFilter);
         }
-        filter.push(idFilter);
 
         return {
             'id': `${sourceLayer}-fill`,
@@ -194,8 +202,12 @@ export class FeatureFillLayer
 
 export class FeaturePatternLayer
 {
-    static style(sourceId, sourceLayer, patternedFeatures)
+    static style(sourceId, sourceLayer, texturedFeatures)
     {
+        if (texturedFeatures.length === 0) {
+            return null;
+        }
+
         const fillPattern = ['match', ['get', 'id']];
         const filter = [
             'all',
@@ -206,9 +218,9 @@ export class FeaturePatternLayer
             ]
         ];
         const idFilter = ['in', 'id'];
-        for (const feature of patternedFeatures) {
+        for (const feature of texturedFeatures) {
             fillPattern.push(feature.id);
-            fillPattern.push(feature.pattern);
+            fillPattern.push(feature.texture);
             idFilter.push(feature.id);
         }
         filter.push(idFilter);
