@@ -83,9 +83,12 @@ class MapFeatureLayer
     //=======================================
     {
         const styleLayer = styleFunction(FEATURE_SOURCE_ID, this._id, options);
-        this._map.addLayer(styleLayer);
-        this._styleLayerIds.push(styleLayer.id);
-        return styleLayer.id;
+        if (styleLayer) {
+            this._map.addLayer(styleLayer);
+            this._styleLayerIds.push(styleLayer.id);
+            return styleLayer.id;
+        }
+        return null;
     }
 
     setBorderProperties_(layerActive=false, annotating=false)
