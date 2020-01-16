@@ -159,102 +159,19 @@ export class StyleSheet
             styling['pattern'] = 'texture';
         }
 
-/*
-        for (let rule of this._styleRules) {
-            if (rule.matches(selector)) {
-                const style = rule.styling;
-                if (style.type === 'DECLARATION_LIST') {
-                    for (let declaration of style.value) {
-                        styling[declaration.property.value] = declaration.value;
-                    }
-                }
-            }
         }
-*/
         return styling;
     }
-}
 
-//==============================================================================
-
-export function tokensToString(tokens)
-{
-    if (!tokens) {
-        return '';
-    } else if (tokens instanceof Array) {
-        let text = [];
-        for (let t of tokens) {
-            text.push(tokensToString(t));
-        }
-        return text.join(', ');
-    } else if (tokens.type === 'SEQUENCE') {
-        let text = [];
-        for (let t of tokens.value) {
-            text.push(tokensToString(t));
-        }
-        return text.join(' ');
-    } else if (tokens.type === 'FUNCTION') {
-        return `${tokens.name.value}(TODO...)`;
-    } else if (['DIMENSION', 'PERCENTAGE'].indexOf(tokens.type) >= 0) {
-        return `${tokens.value}${tokens.unit}`;
-    } else {
-        return tokens.value;
     }
-}
 
-//==============================================================================
 
-export function styleAsString(styling, name, defaultValue='')
-{
-    const text = tokensToString(styling[name]);
 
-    return text ? text : defaultValue;
-}
 
-//==============================================================================
-
-export function parseColour(diagram, tokens)
-{
-    if (tokens.type === "FUNCTION") {
-        const name = tokens.name.value;
-        if (["radial-gradient", "linear-gradient"].indexOf(name) < 0) {
-            throw new exception.StyleError(tokens, "Unknown colour gradient");
         }
-        const gradientType = name.substr(0, 6);
-        let stopColours = [];
-        if ('parameters' in tokens) {
-            const parameters = tokens.parameters;
-            if (parameters instanceof Array) {
-                let colour, stop;
-                for (let token of parameters) {
-                    if (token.type === 'SEQUENCE') {
-                        colour = parseColourValue(token.value[0]);
-                        if (token.value[1].type === "PERCENTAGE") {
-                            stop = token.value[1].value;
-                        } else {
-                            throw new exception.StyleError(tokens, "Gradient stop percentage expected");
-                        }
-                    } else {
-                        colour = parseColourValue(token);
-                        stop = null;
-                    }
-                    stopColours.push([colour, stop]);
-                }
-            }
-        }
-        return diagram.svgFactory.gradient(gradientType, stopColours);
-    }
-    return parseColourValue(tokens);
-}
 
-//==============================================================================
 
-export function parseColourValue(tokens)
-{
-    if (['HASH', 'ID'].indexOf(tokens.type) >= 0) {
-        return tokens.value;
     }
-    throw new exception.StyleError(tokens, "Colour expected");
 }
 
 //==============================================================================
