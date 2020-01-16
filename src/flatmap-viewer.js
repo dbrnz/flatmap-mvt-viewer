@@ -177,7 +177,7 @@ class FlatMap
     /**
      * Load patterns/textures referenced in style rules.
      */
-    loadPatternImage_(url)
+    loadTextureImage_(url)
     //====================
     {
         return new Promise((resolve, reject) => {
@@ -188,14 +188,15 @@ class FlatMap
         });
     }
 
-    async addPattern(rulesUrl, id, path)
+    async addTexture(rulesUrl, id, path)
     //==================================
     {
         const url = path.startsWith('/') ? this.urlFor(path)
                                          : new URL(path, rulesUrl);
-        const patternImage = await this.loadPatternImage_(url);
+        const image = await this.loadTextureImage_(url);
 
-        this._map.addImage(id, patternImage);
+        this._map.addImage(id, image);
+
     }
 
     urlFor(localPath)

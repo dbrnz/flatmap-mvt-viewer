@@ -36,34 +36,6 @@ const DEFAULT_STYLESHEET = './static/themes/default.css';
 
 //==============================================================================
 
-class PropertiesMap
-{
-    constructor(flatmap)
-    {
-        this._flatmap = flatmap;
-        this._properties = new Map();
-    }
-
-    set(rulesUrl, declaration)
-    //========================
-    {
-        const property = declaration.property;
-        const value = declaration.value;
-
-        if (property === 'pattern') {
-            if (value.type === 'SEQUENCE'
-             && value.value.length === 2) {
-                const patternId = value.value[0];
-                this._flatmap.addPattern(rulesUrl, patternId, value.value[1].slice(1, -1));
-                this._properties.set(property, patternId);
-            } else {
-                console.log("Invalid 'pattern' value");
-            }
-        } else {
-            this._properties.set(property, value);
-        }
-    }
-}
 
 //==============================================================================
 
@@ -105,24 +77,37 @@ export class StyleSheet
                     .then(text => this.addStyleRules_(responseUrl, text));
     }
 
-    addDeclarations_(rulesUrl, selector, declarationList)
-    //==================================================
+    addDeclarations_(selector, declarationList)
+    //=========================================
     {
         let properties = null;
         if (this._rulesMap.has(selector)) {
             properties = this._rulesMap.get(selector);
         } else {
-            properties = new PropertiesMap(this._flatmap);
+            properties = new Map();
             this._rulesMap.set(selector, properties);
         }
 
-        for (let declaration of declarationList) {
-            properties.set(rulesUrl, declaration);
+        for (const declaration of declarationList) {
+            properties.set(declaration.property, declaration.value);
         }
     }
 
-    addStyleRules_(url, cssText)
-    //==========================
+    async addTextures_(url, declarationList)
+    //======================================
+    {
+        for (const declaration of declarationList) {
+            const textureUrl = declaration.value;
+            if (textureUrl.startsWith('url(') && textureUrl.endsWith(')')) {
+                await this._flatmap.addTexture(url, declaration.property, textureUrl.slice(5, -2));
+            } else {
+                console.log(`Invalid texture Url: ${textureUrl}`);
+            }
+        }
+    }
+
+    async addStyleRules_(url, cssText)
+    //================================
     {
         if (cssText.trim() === '') return;
 
@@ -134,7 +119,11 @@ export class StyleSheet
                  && rule.value.type === 'DECLARATION_LIST') {
                     const declarations = rule.value.value
                     for (let selector of rule.selectors) {
-                        this.addDeclarations_(url, selector, declarations);
+                        if (selector === '::textures') {
+                            this.addTextures_(url, declarations);
+                        } else {
+                            await this.addDeclarations_(selector, declarations);
+                        }
                     }
                 }
             }
