@@ -283,8 +283,8 @@ export class LayerManager
     layerQueryable(layerId)
     //=====================
     {
-        const layer = this._mapLayers.get(layerId);
-        return layer['queryable-nodes'];
+        const mapLayer = this._mapLayers.get(layerId);
+        return mapLayer && mapLayer['queryable-nodes'];
     }
 
     activate(fullLayerId, annotating=false)
