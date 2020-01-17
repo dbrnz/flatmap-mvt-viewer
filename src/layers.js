@@ -221,6 +221,7 @@ export class LayerManager
     {
         this._flatmap = flatmap;
         this._map = flatmap.map;
+        this._styleSheet = flatmap.styleSheet;
         this._layers = new Map;
         this._mapLayers = new Map;
         this._activeLayers = [];
@@ -235,14 +236,22 @@ export class LayerManager
         return this._activeLayerIds;
     }
 
-    addLayer(layer, features)
-    //=======================
+    addLayer(layer)
+    //=============
     {
         this._mapLayers.set(layer.id, layer);
 
-        const featureLayer = new MapFeatureLayer(this._map, layer, features);
+
+        const mapFeatures = [];
+        for (const feature of layer.features) {
+            mapFeatures.push(new MapFeature(layer.id, feature, this._flatmap.getAnnotation(feature.id)));
+        }
+
+        const mapboxLayers = new MapboxStyleLayers(this._map, layer.id, mapFeatures, this._styleSheet);
+
         const fullLayerId = this._flatmap.fullLayerId(layer.id);
-        this._layers.set(fullLayerId, featureLayer);
+
+        this._layers.set(fullLayerId, mapboxLayers);
 
         if (layer.selectable) {
             this._selectableLayerId = fullLayerId;
