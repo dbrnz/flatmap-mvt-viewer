@@ -32,7 +32,7 @@ export class MapFeature
 
         if (annotation != null) {
             this._annotated = true;
-            this._styleId = annotation.id;
+            this._styleId = `#${annotation.id}`;
             this._models = annotation.models;
             if ('error' in annotation) {
                 this._annotationError = true;
@@ -42,6 +42,7 @@ export class MapFeature
             }
         } else {
             this._annotated = false;
+            this._styleId = null;
             this._models = [];
         }
     }

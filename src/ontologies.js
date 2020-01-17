@@ -23,13 +23,14 @@ limitations under the Licen
 //==============================================================================
 
 import {loadJSON} from './endpoints.js';
+import {Style} from './stylesheet.js';
 
 //==============================================================================
 
 export class ModelOntologies
 {
-    static async new(flatmap)
-    //=======================
+    static async new()
+    //================
     {
         const ontologies = new ModelOntologies();
         await ontologies.initialize_();
@@ -47,8 +48,17 @@ export class ModelOntologies
     }
 
     static getEntity(key)
+    //===================
     {
-        return ModelOntologies._entities.get(key);
+        return ModelOntologies._entities.get(ModelOntologies.normaliseKey(key));
+    }
+
+    static normaliseKey(key)
+    //======================
+    {
+        return (['UBERON:', 'UBERON_'].includes(key.substr(0, 7)))
+            ? `UBERON_${key.substr(7).padStart(7, '0')}`
+            : key;
     }
 }
 
@@ -58,9 +68,9 @@ ModelOntologies._entities = new Map();
 
 class Entity
 {
-    constructor(type, properties)
+    constructor(id, properties)
     {
-        this._type = type;
+        this._id = id;
         this._label = properties['label'];
         this._part_of = [];
         for (const part_of of properties['part_of']) {
@@ -84,24 +94,26 @@ class Entity
     }
 
     /**
-     * Get style rules associated with an entity's super classes.
+     * Get the style associated with an entity.
      *
-     * @type Object
+     * @type Style
      */
-    superStyle(stylesheet)
-    //====================
+    style(stylesheet)
+    //===============
     {
-        const styling = new Style();
+        const style = new Style();
 
-        for (const type of this._part_of) {
-            styling.merge(stylesheet.styling(`.${type}`));
+        for (const model of this._part_of) {
+            style.merge(stylesheet.modelStyle(model));
         }
 
-        for (const type of this._is_a) {
-            styling.merge(stylesheet.styling(`.${type}`));
+        for (const model of this._is_a) {
+            style.merge(stylesheet.modelStyle(model));
         }
 
-        return styling;
+        style.merge(stylesheet.style(`.${this._id}`));
+
+        return style;
     }
 }
 

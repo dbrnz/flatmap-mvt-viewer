@@ -1,21 +1,35 @@
 /* @import ??? */
 
+::textures {
+    texture1: url("../images/texture1.png");
+    texture2: url("../images/texture2.png");
+    texture3: url("../images/texture3.png");
+}
+
 * {
+    color: red;
+}
+
+Point {
 
 }
 
-point {
+Polygon {
+    color: #EEE;
+}
+
+Line {
 
 }
 
-polygon {
-
+.UBERON_1555 { /* digestive tract */
+    texture: texture1;
 }
 
-line {
-
+#heart {
+    texture: texture3;
 }
 
-#oval {
-    pattern: texture "../images/texture2.png";
+#rect {
+    color: #F88;
 }

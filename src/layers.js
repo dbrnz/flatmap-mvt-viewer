@@ -53,7 +53,7 @@ class MapboxStyleLayers
         for (const feature of features) {
             const mapboxFeature = utils.mapboxFeature(id, feature.id);
 
-            const styling = stylesheet.styling(feature);
+            const styling = stylesheet.featureStyle(feature).styling;
 
             for (let [key, value] of Object.entries(styling)) {
 

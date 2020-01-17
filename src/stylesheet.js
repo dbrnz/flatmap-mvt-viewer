@@ -32,10 +32,45 @@ const cssparser = require('cssparser/lib/cssparser.js');
 
 //==============================================================================
 
+import {ModelOntologies} from './ontologies.js';
+
+//==============================================================================
+
 const DEFAULT_STYLESHEET = './static/themes/default.css';
 
 //==============================================================================
 
+export class Style
+{
+    constructor(style=null)
+    {
+        this._style = {};
+
+        if (style !== null) {
+            this.merge(style);
+        }
+    }
+
+    get styling()
+    //===========
+    {
+        return this._style;
+    }
+
+    merge(style)
+    //==========
+    {
+        for (const [key, value] of Object.entries(style.styling)) {
+            this.set(key, value);
+        }
+    }
+
+    set(key, value)
+    //=============
+    {
+        this._style[key] = value;
+    }
+}
 
 //==============================================================================
 
@@ -46,6 +81,7 @@ export class StyleSheet
         this._flatmap = flatmap;
         this._parser = new cssparser.Parser();
         this._rulesMap = new Map();
+        this._modelStyleCache = new Map();
     }
 
     static async new(flatmap)
@@ -121,6 +157,8 @@ export class StyleSheet
                     for (let selector of rule.selectors) {
                         if (selector === '::textures') {
                             this.addTextures_(url, declarations);
+                        } else if (selector.startsWith('.')) {
+                            this.addDeclarations_(`.${ModelOntologies.normaliseKey(selector.substr(1))}`, declarations);
                         } else {
                             await this.addDeclarations_(selector, declarations);
                         }
@@ -130,36 +168,59 @@ export class StyleSheet
         }
     }
 
-    styling(selector)
+    style(selector)
+    //=============
+    {
+        const style = new Style();
+
+        if (this._rulesMap.has(selector)) {
+            const properties = this._rulesMap.get(selector);
+            for (const [key, value] of properties.entries()) {
+                style.set(key , value);
+            }
+        }
+
+        return style;
+    }
+
+    modelStyle(model)
     //===============
     {
-        // TODO: We need to cache where possible...
-
-        let colour = (selector.type === 'Polygon') ? 'blue' : 'green';
-        if ('classes' in selector) {
-            colour = '#F88';
+        if (this._modelStyleCache.has(model)) {
+            return this._modelStyleCache.get(model);
         }
 
-        let styling = {};
-
-        styling['colour'] = colour;
-
-        if (selector.id === 'oval') {
-            styling['pattern'] = 'texture';
+        const style = new Style();
+        const entity = ModelOntologies.getEntity(model);
+        if (entity) {
+            style.merge(entity.style(this));
+        } else {
+            style.merge(this.style(`.${ModelOntologies.normaliseKey(model)}`));
         }
 
-        }
-        return styling;
+        this._modelStyleCache.set(model, style);
+        return style;
     }
 
-    }
+    featureStyle(feature)
+    //===================
+    {
+        if (feature.styleId === '#stomach') {
+            //debugger;
+        }
+        const style = new Style(this.style('*'));
 
+        style.merge(this.style(feature.type));
 
-
-
+        for (const model of feature.models) {
+            style.merge(this.modelStyle(model));
         }
 
+        if (feature.styleId) {
+            style.merge(this.style(feature.styleId));
+        }
 
+        return style;
     }
 }
 
