@@ -189,9 +189,9 @@ export class FeatureFillLayer
             'filter': filter,
             'paint': {
                 'fill-color': [
-                    'case', [ '!=', ['feature-state', 'color'], null],
-                        ['feature-state', 'color'],
-                        PAINT_STYLES['fill-color'],
+                    'case', [ '!=', ['feature-state', 'colour'], null],
+                        ['feature-state', 'colour'],
+                        PAINT_STYLES['fill-colour'],
                     ],
             }
         };

@@ -68,8 +68,8 @@ class MapboxStyleLayers
                         })
                     }
                 }
-                if (key === 'colour') {
-                    this._map.setFeatureState(mapboxFeature, { 'color': value });
+                if (['color', 'colour'].includes(key)) {
+                    this._map.setFeatureState(mapboxFeature, { 'colour': value });
                 }
             }
 
