@@ -22,11 +22,15 @@ limitations under the License.
 
 //==============================================================================
 
+import {FEATURE_SOURCE_ID} from './layers.js';
+
+//==============================================================================
+
 export function mapboxFeature(layer, id)
 {
     return {
         id: id.split('-')[1],
-        source: "features",
+        source: FEATURE_SOURCE_ID,
         sourceLayer: layer
     };
 }

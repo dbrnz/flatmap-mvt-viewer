@@ -29,7 +29,10 @@ import * as utils from './utils.js';
 
 //==============================================================================
 
-const FEATURE_SOURCE_ID = 'features';
+/**
+ * Name of source layer containing features, as given in map's ``style.json``.
+ */
+export const FEATURE_SOURCE_ID = 'features';
 
 //==============================================================================
 
